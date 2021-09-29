@@ -67,12 +67,7 @@ az iot hub routing-endpoint create --resource-group MyResourceGroup --hub-name M
 az iot hub route create -g MyResourceGroup --hub-name MyIotHub --endpoint-name MyStorageAccountName --source-type DeviceMessages --route-name Route --condition true --enabled true
 ```
 
-
-
-
 # Deploy application
-
-```
 
 Deploy Synpse application. Modify application yaml with your thing endpoint.
 
