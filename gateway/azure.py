@@ -10,7 +10,8 @@ import os
 import uuid
 
 from nats.aio.client import Client as NATS
-from azure.iot.device import Message,IoTHubDeviceClient
+from azure.iot.device import Message
+from azure.iot.device.aio import IoTHubDeviceClient
 
 async def run(loop):
     # nc is the NATS connection to recieve messages from our application
@@ -22,7 +23,7 @@ async def run(loop):
     async def reconnected_cb():
         print("Got reconnected...")
 
-    await nc.connect("localhost",
+    await nc.connect("nats",
                      reconnected_cb=reconnected_cb,
                      disconnected_cb=disconnected_cb,
                      max_reconnect_attempts=-1,

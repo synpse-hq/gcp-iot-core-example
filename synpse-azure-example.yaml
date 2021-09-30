@@ -3,16 +3,22 @@ description: Azure IoT Hub Synpse example
 scheduling:
   type: Conditional
   selectors:
-    aws: iot    
+    azure: iot
 spec:
   containers:
-  - name: nats
-    image: nats
-    ports:
-      - "4222:4222"
-      - "6222:6222"
-      - "8222:8222"
-  - name: app
-    image: quay.io/synpse/metrics-nats-example-app
-  - name: azure-iot
-    image: quay.io/synpse/azure-iot-hub-example
+    - name: nats
+      image: nats
+      ports:
+        - 4222:4222
+        - 6222:6222
+        - 8222:8222
+      restartPolicy: {}
+    - name: metrics
+      image: quay.io/synpse/metrics-nats-example-app
+      restartPolicy: {}
+    - name: azure-iot
+      image: quay.io/synpse/azure-iot-hub-example
+      env:
+        - name: IOTHUB_DEVICE_CONNECTION_STRING
+          fromSecret: azure-conn-string
+      restartPolicy: {}

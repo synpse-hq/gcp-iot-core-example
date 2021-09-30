@@ -62,14 +62,29 @@ az iot hub routing-endpoint create --resource-group MyResourceGroup --hub-name M
         --ff {iothub}-{partition}-{YYYY}-{MM}-{DD}-{HH}-{mm}
 ```
 
-7. Use routing in question with our HUB:
+7. Get the endpoint name
 ```
-az iot hub route create -g MyResourceGroup --hub-name MyIotHub --endpoint-name MyStorageAccountName --source-type DeviceMessages --route-name Route --condition true --enabled true
+az iot hub routing-endpoint list --hub-name mj-hub
+```
+
+7. Use routing in question with our HUB (endpoint name is same as --endpoint-name)
+```
+az iot hub route create -g MyResourceGroup --hub-name MyIotHub --endpoint-name storage --source-type DeviceMessages --route-name Route --condition true --enabled true
 ```
 
 # Deploy application
 
 Deploy Synpse application. Modify application yaml with your thing endpoint.
+
+1. Create connection string secret, 
+
+> Important: Append to the string ;DeviceID=synpse
+
+```
+synpse secret create azure-conn-string -v "HostName=myHub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=YqVZ65xzQH/xxxxxxxxxxxxxxxx/xxxxxxxxxx;DeviceId=synpse"
+```
+
+Deploy the application
 
 ```
 synpse deploy -f synpse-azure-example.yaml
