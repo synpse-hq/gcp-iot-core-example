@@ -1,3 +1,10 @@
+# HACK:
+import sys
+# Important: Azure is doing somehing fun with their installs. 
+# https://stackoverflow.com/questions/54400662/no-module-named-azure-eventhub-azure-is-not-a-package
+sys.path.insert( 0, '/opt/venv/lib/python3.9/site-packages' )
+#sys.path.insert( 0, '/go/src/github.com/synpse-hq/azure-iot-hub-example/pyenv/lib/python3.9/site-packages' )
+
 import asyncio
 import os
 import uuid

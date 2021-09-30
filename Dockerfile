@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
@@ -13,6 +13,7 @@ RUN apt-get -y update && \
 
 COPY . .
 
+RUN pip install -U pip wheel
 RUN pip install -r gateway/requirements.txt
 
 CMD [ "python", "/server/gateway/azure.py" ]
