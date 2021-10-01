@@ -92,3 +92,10 @@ synpse deploy -f synpse-gcp-example.yaml
 Once running, you should see application running and data coming into Azure storage account blob.
 
 ![Storage blob](assets/gcp-storage-account.pnk)
+
+
+# WTF's
+
+1. SDK is crazy with all these JWT retries and refresh, reconnects, etc. Google, you really can do better
+
+2. CLI is decent, but your documentation of topic usages (status, events, config) is wow
