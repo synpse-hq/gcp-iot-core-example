@@ -1,31 +1,12 @@
-#!/usr/bin/env python
-
-# Copyright 2017 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#         http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """Python sample for connecting to Google Cloud IoT Core via MQTT, using JWT.
 This example connects to Google Cloud IoT Core via MQTT, using a JWT for device
-authentication. After connecting, by default the device publishes 100 messages
-to the device's MQTT topic at a rate of one per second, and then exits.
-Before you run the sample, you must follow the instructions in the README
-for this sample.
+authentication. After connecting, by default it will published messages from NATs
+messaging server
 """
 
-# [START iot_mqtt_includes]
 import argparse
 import asyncio
 import datetime
-import logging
 import os
 import random
 import ssl
@@ -35,9 +16,6 @@ import jwt
 import paho.mqtt.client as mqtt
 from nats.aio.client import Client as NATS
 
-# [END iot_mqtt_includes]
-
-logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.CRITICAL)
 
 # The initial backoff time after a disconnection occurs, in seconds.
 minimum_backoff_time = 1
@@ -246,15 +224,7 @@ def parse_command_line_args():
         type=int,
         help="Duration (seconds) to listen for configuration messages",
     )
-    parser.add_argument(
-        "--message_type",
-        choices=("event", "state"),
-        default="event",
-        help=(
-            "Indicates whether the message to be published is a "
-            "telemetry event or a device state message."
-        ),
-    )
+
     parser.add_argument(
         "--mqtt_bridge_hostname",
         default="mqtt.googleapis.com",
@@ -293,13 +263,11 @@ def parse_command_line_args():
 async def run(loop):
     args = parse_command_line_args()
     """Connects a device, sends data, and receives data."""
-    # [START iot_mqtt_run]
     global minimum_backoff_time
     global MAXIMUM_BACKOFF_TIME
 
     # Publish to the events or state topic based on the flag.
-    sub_topic = "events" if args.message_type == "event" else "state"
-
+    sub_topic = "state"
     mqtt_topic = "/devices/{}/{}".format(args.device_id, sub_topic)
 
     client_id = "projects/{}/locations/{}/registries/{}/devices/{}".format(
@@ -337,8 +305,9 @@ async def run(loop):
     def send_message(msg):
         jwt_iat = datetime.datetime.utcnow()
         jwt_exp_mins = args.jwt_expires_minutes
-        minimum_backoff_time = 1
-        MAXIMUM_BACKOFF_TIME = 10
+
+        global minimum_backoff_time
+        global MAXIMUM_BACKOFF_TIME
         # Process network events.
         client = gcp_client
         client.loop()
@@ -377,20 +346,11 @@ async def run(loop):
                 args.mqtt_bridge_hostname,
                 args.mqtt_bridge_port,
             )
-        # [END iot_mqtt_jwt_refresh]
-        # Publish "payload" to the MQTT topic. qos=1 means at least once
-        # delivery. Cloud IoT Core also supports qos=0 for at most once
-        # delivery.
     
 
         client.publish(mqtt_topic, payload, qos=1)
 
-        # Send events every second. State should not be updated as often
-        for i in range(0, 1):
-            time.sleep(1)
-            client.loop()
-
-        # Subscribe to get all messages from the beginning.
+    # Subscribe to get all messages from the beginning.
     await nc.subscribe("metrics", cb=send_message)
 
 
