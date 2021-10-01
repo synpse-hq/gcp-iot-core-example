@@ -1,6 +1,6 @@
-# Azure IoT Hub Synpse example
+# GCP IoT Core Synpse example
 
-Azure IoT Hub example contains IoT application example for Azure public cloud integration
+GCP IoT Hub example contains IoT application example for GCP public cloud integration
 
 Synpse is not competing with any of the Public Cloud offerings. Contrary - it adds value ontop.
 
@@ -17,82 +17,78 @@ This is where Synpse comes in. It allows deploy and interact with your applicati
 application logic from hardware.
 
 ![Diagram](assets/diagram.png)
-## Azure IoT Hub 
+## GCP IoT Core 
 
-Configure Azure IoT Hub for this example.
+Configure GCP IoT Core create registry
 
-1. Create Azure IoT hub:
+1. Create pubsub topic
 ```
-az iot hub create --resource-group MyResourceGroup --name MyIotHub --location eastus --tags synpse=true
-```
-
-2. Create device identity:
-```
-az iot hub device-identity create -n MyIotHub -d synpse  --ee
+gcloud pubsub topics create synpse-events
 ```
 
-3. Create connection string for devices:
+2. Create GCP IoT registry:
 ```
-az iot hub connection-string  show --hub-name MyIotHub --device-id synpse
-```
-
-Note the connection string. We will use it when deploying Synpse application.
-Where to send messages really depends on your cloud architecture.
-
-For this example we gonna create message route to storage account blob.
-
-4. Create storage account:
-```
-az storage account create -n MyStorageAccountName -g MyResourceGroup -l eastus
+gcloud iot registries create synpse-registry --region=us-central1 --enable-http-config --enable-mqtt-config --state-pubsub-topic projects/{project_id}/topics/synpse-events
 ```
 
-5. Create container/bucket for results:
+3. Create storage event
 ```
-az storage container create --account-name MyStorageAccountName -n metrics
-```
-
-6. Create IoT hub endpoint for message routing:
-```
-storageConnectionString=$(az storage account show-connection-string --name MyStorageAccountName --query connectionString -o tsv)
-
-az iot hub routing-endpoint create --resource-group MyResourceGroup --hub-name MyIotHub \
-        --endpoint-name storage --endpoint-type azurestoragecontainer --endpoint-resource-group MyResourceGroup \
-        --endpoint-subscription-id $(az account show | jq -r .id) --connection-string $storageConnectionString \
-        --container-name metrics --batch-frequency 60 --chunk-size 10 \
-        --ff {iothub}-{partition}-{YYYY}-{MM}-{DD}-{HH}-{mm}
+gsutil mb -l us-central1 -b on gs://synpse-events
 ```
 
-7. Get the endpoint name
+4. Create dataflow job
 ```
-az iot hub routing-endpoint list --hub-name mj-hub
-```
-
-7. Use routing in question with our HUB (endpoint name is same as --endpoint-name)
-```
-az iot hub route create -g MyResourceGroup --hub-name MyIotHub --endpoint-name storage --source-type DeviceMessages --route-name Route --condition true --enabled true
+gcloud dataflow jobs run ps-to-avro-synpse-events --gcs-location gs://dataflow-templates-us-central1/latest/Cloud_PubSub_to_Avro --region us-central1 --staging-location gs://synpse-events/temp --parameters inputTopic=projects/iot-hub-326815/topics/synpse-events,outputDirectory=gs://synpse-events/events,avroTempDirectory=gs://synpse-events/avro-temp
 ```
 
+
+5. Create a device
+```
+gcloud iot devices create synpse --region=us-central1 --registry=synpse-registry
+```
+
+6. Generate certificate for our device:
+```
+openssl ecparam -genkey -name prime256v1 -noout -out ec_private.pem
+openssl ec -in ec_private.pem -pubout -out ec_public.pem
+```
+
+7. Add public key to GCP IoT Core
+```
+gcloud iot devices credentials create --region=us-central1 --registry=synpse-registry --device=synpse --path=ec_public.pem --type=es256
+```
+
+
+8. Download google root CA:
+```
+curl  https://pki.goog/roots.pem -o roots.pem
+```
+
+9. Test application
+
+```
+python gateway/gcp.py --device_id synpse --private_key_file ./ec_private.pem --cloud_region=us-central1 --registry_id synpse-registry --project_id iot-hub-326815 --algorithm ES256 --message_type state
+
+```
 # Deploy application
 
 Deploy Synpse application. Modify application yaml with your thing endpoint.
 
-1. Create connection string secret, 
-
-> Important: Append to the string ;DeviceID=synpse
-
+1. Create certificate secret
 ```
-synpse secret create azure-conn-string -v "HostName=myHub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=YqVZ65xzQH/xxxxxxxxxxxxxxxx/xxxxxxxxxx;DeviceId=synpse"
+synpse secret create gcp-cert -f ec_private.pem
+synpse secret create gcp-root -f roots.pem
 ```
 
-Deploy the application
-
+Deploy the application:
 ```
-synpse deploy -f synpse-azure-example.yaml
+synpse deploy -f synpse-gcp-example.yaml
 ```
 
-![Message flow](assets/azure-messages.png)
+![Message flow](assets/gcp-messages.png)
 
+![Message flow](assets/gcp-dataflow.png)
 
 Once running, you should see application running and data coming into Azure storage account blob.
 
-![Storage blob](assets/azure-storage-account2.png)
+![Storage blob](assets/gcp-storage-account.pnk)

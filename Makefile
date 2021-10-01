@@ -1,4 +1,4 @@
-APP_REPO ?= quay.io/synpse/azure-iot-hub-example
+APP_REPO ?= quay.io/synpse/gcp-iot-hub-example
 
 .PHONY: image
 image:
@@ -13,4 +13,4 @@ run: pyenv
 	. pyenv/bin/activate && \
 	cd gateway/ && \
 	pip install -r requirements.txt && \
-	python azure.py
+	python gateway/gcp.py --device_id synpse --private_key_file ./../ec_private.pem --cloud_region=us-central1 --registry_id synpse-registry --project_id iot-hub-326815 --algorithm ES256 --message_type state

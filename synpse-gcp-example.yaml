@@ -1,0 +1,35 @@
+name: GCP-IoT-Hub
+description: Google Cloud IoT Core Synpse example
+scheduling:
+  type: Conditional
+  selectors:
+    gcp: iot
+spec:
+  containers:
+    - name: nats
+      image: nats
+      restartPolicy: {}
+    - name: metrics
+      image: quay.io/synpse/metrics-nats-example-app
+      restartPolicy: {}
+    - name: gcp-iot
+      image: quay.io/synpse/gcp-iot-hub-example
+      command: /server/gcp.py
+      args:
+        - --device_id=synpse
+        - --private_key_file=/server/ec_private.pem
+        - --cloud_region=us-central1
+        - --registry_id=synpse-registry 
+        - --project_id=iot-hub-326815 
+        - --algorithm=ES256 
+        - --message_type=state
+        - --ca_certs=/server/roots.pem
+      secrets:
+      - name: gcp-cert
+        filepath: /server/ec_private.pem
+      - name: gcp-root
+        filepath: /server/roots.pem
+      env:
+        - name: NATS_HOSTNAME
+          value: nats
+      restartPolicy: {}

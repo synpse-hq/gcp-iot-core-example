@@ -11,9 +11,11 @@ RUN apt-get -y update && \
     add-apt-repository ppa:george-edison55/cmake-3.x -y && \
     apt-get install cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev python3-pip -y
 
-COPY . .
+COPY ./gateway/* .
 
 RUN pip install -U pip wheel
-RUN pip install -r gateway/requirements.txt
+RUN pip install -r requirements.txt
+RUN chmod 777 /server/gcp.py
 
-CMD [ "python", "/server/gateway/azure.py" ]
+ENTRYPOINT [ "python" ]
+CMD ["/server/gcp.py" ]
